@@ -49,9 +49,9 @@ define context contextreg
 @define PRE_PIX "prefix_90=0 & prefix_91=0 & prefix_92=1"
 @define NO_PRE  "prefix_90=0 & prefix_91=0 & prefix_92=0"
 
-:^instruction is prefix=0x90; instruction [ prefix_90=1; prefix_91=0; prefix_92=0; ] {}
-:^instruction is prefix=0x91; instruction [ prefix_90=0; prefix_91=1; prefix_92=0; ] {}
-:^instruction is prefix=0x92; instruction [ prefix_90=0; prefix_91=0; prefix_92=1; ] {}
+:^instruction is prefix=0x90 & $(NO_PRE); instruction [ prefix_90=1; prefix_91=0; prefix_92=0; ] {}
+:^instruction is prefix=0x91 & $(NO_PRE); instruction [ prefix_90=0; prefix_91=1; prefix_92=0; ] {}
+:^instruction is prefix=0x92 & $(NO_PRE); instruction [ prefix_90=0; prefix_91=0; prefix_92=1; ] {}
 
 define pcodeop halt;
 define pcodeop waitForInterrupt;
