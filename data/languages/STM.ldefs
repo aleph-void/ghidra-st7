@@ -10,7 +10,7 @@
               slafile="ST70.sla"
               processorspec="ST7.pspec"
               id="ST7:BE:16:default">
-        <description>ST Microelectronics ST7 microcontroller family</description>
+        <description>STMicroelectronics ST7 8-bit microcontroller (single interrupt mask bit I)</description>
         <compiler name="default" spec="ST7.cspec" id="default"/>
     </language>
 
@@ -22,7 +22,7 @@
               slafile="ST72.sla"
               processorspec="ST7.pspec"
               id="ST72:BE:16:default">
-        <description>ST Microelectronics ST72 microcontroller family</description>
+        <description>STMicroelectronics ST7 8-bit microcontroller with two-bit interrupt priority (CC bits I1 and I0)</description>
         <compiler name="default" spec="ST7.cspec" id="default"/>
     </language>
 
