@@ -1,0 +1,1293 @@
+# ST7 p-code cases.  Expectations are worked out by hand from the ST7 Family Programming Manual
+# (PM0002): operation and flag tables of each instruction, stack order of CALL/TRAP/IRET.
+# Registers start at 0, memory at 0; flags start 0 unless set.  Code is placed at 0x1000.
+
+# ---------------- arithmetic and flags ----------------
+case ld_imm_negative
+code A680
+expect A 0x80
+expect N 1
+expect Z 0
+end
+
+case ld_imm_zero_clears_N
+code A600
+set A 0x44
+set N 1
+expect A 0
+expect Z 1
+expect N 0
+end
+
+case add_carry_out
+code AB20
+set A 0xF0
+expect A 0x10
+expect C 1
+expect H 0
+expect N 0
+expect Z 0
+end
+
+case add_half_carry
+code AB01
+set A 0x0F
+expect A 0x10
+expect H 1
+expect C 0
+end
+
+case add_to_zero
+code AB80
+set A 0x80
+expect A 0
+expect Z 1
+expect C 1
+expect N 0
+end
+
+case adc_carry_in_makes_carry_out
+code A900
+set A 0xFF
+set C 1
+expect A 0
+expect C 1
+expect Z 1
+expect H 1
+end
+
+case adc_carry_in_half_carry_only
+code A900
+set A 0x7F
+set C 1
+expect A 0x80
+expect C 0
+expect N 1
+expect H 1
+end
+
+case adc_nibbles_with_carry
+code A907
+set A 0x08
+set C 1
+expect A 0x10
+expect H 1
+expect C 0
+end
+
+case sub_borrow
+code A020
+set A 0x10
+expect A 0xF0
+expect C 1
+expect N 1
+expect Z 0
+end
+
+case sub_zero
+code A005
+set A 5
+expect A 0
+expect Z 1
+expect C 0
+end
+
+case sbc_borrow_chain
+code A200
+set A 0
+set C 1
+expect A 0xFF
+expect C 1
+expect N 1
+expect Z 0
+end
+
+case sbc_to_zero
+code A20F
+set A 0x10
+set C 1
+expect A 0
+expect Z 1
+expect C 0
+end
+
+case sbc_borrow_only_from_carry
+code A205
+set A 5
+set C 1
+expect A 0xFF
+expect C 1
+end
+
+case cp_a_below
+code A105
+set A 3
+expect A 3
+expect C 1
+expect N 1
+expect Z 0
+end
+
+case cp_a_equal
+code A107
+set A 7
+expect Z 1
+expect C 0
+expect N 0
+end
+
+case cp_a_above
+code A105
+set A 9
+expect C 0
+expect N 0
+expect Z 0
+end
+
+case cp_x_equal
+code A309
+set X 9
+expect Z 1
+expect C 0
+end
+
+case cp_y_below
+code 90A302
+set Y 1
+expect C 1
+expect N 1
+expect Y 1
+end
+
+case and_imm
+code A43C
+set A 0xF0
+expect A 0x30
+expect N 0
+expect Z 0
+end
+
+case or_imm_negative
+code AAF0
+set A 0x0F
+expect A 0xFF
+expect N 1
+end
+
+case xor_to_zero
+code A8FF
+set A 0xFF
+expect A 0
+expect Z 1
+end
+
+case bcp_keeps_A
+code A5F0
+set A 0x0F
+expect A 0x0F
+expect Z 1
+expect N 0
+end
+
+# ---------------- loads in every addressing mode ----------------
+case ld_short_direct
+code B610
+set mem:10 0x5A
+expect A 0x5A
+expect N 0
+expect Z 0
+end
+
+case ld_long_direct_zero
+code C62000
+set A 0x44
+set mem:2000 0
+expect A 0
+expect Z 1
+end
+
+case ld_x_indirect_register
+code F6
+set X 0x10
+set mem:10 0x77
+expect A 0x77
+end
+
+case ld_short_indexed_x
+code E610
+set X 5
+set mem:15 0x99
+expect A 0x99
+expect N 1
+end
+
+case ld_long_indexed_x
+code D62000
+set X 3
+set mem:2003 0x12
+expect A 0x12
+end
+
+case ld_y_indirect_register
+code 90F6
+set Y 0x20
+set mem:20 0x31
+expect A 0x31
+end
+
+case ld_short_indexed_y
+code 90E610
+set Y 2
+set mem:12 0x42
+expect A 0x42
+end
+
+case ld_long_indexed_y
+code 90D62000
+set Y 0x10
+set mem:2010 0x66
+expect A 0x66
+end
+
+case ld_short_indirect
+code 92B610
+set mem:10 0x20
+set mem:20 0xAB
+expect A 0xAB
+end
+
+case ld_long_indirect_pointer_word
+code 92C610
+set mem:10 0x20
+set mem:11 0x30
+set mem:2030 0xCD
+expect A 0xCD
+end
+
+case ld_short_indirect_indexed_x
+code 92E610
+set mem:10 0x20
+set X 3
+set mem:23 0xEF
+expect A 0xEF
+end
+
+case ld_long_indirect_indexed_x
+code 92D610
+set mem:10 0x20
+set mem:11 0x30
+set X 5
+set mem:2035 0x66
+expect A 0x66
+end
+
+case ld_short_indirect_indexed_y
+code 91E610
+set mem:10 0x20
+set Y 4
+set mem:24 0x5E
+expect A 0x5E
+end
+
+case ld_long_indirect_indexed_y
+code 91D610
+set mem:10 0x21
+set mem:11 0x00
+set Y 0x0F
+set mem:210F 0x3C
+expect A 0x3C
+end
+
+case ld_pointer_high_byte_not_used_for_short
+# a one-byte pointer must be widened with zeros, not read as a word
+code 92B610
+set mem:10 0x20
+set mem:11 0x30
+set mem:20 0x01
+set mem:3020 0x02
+expect A 0x01
+end
+
+# ---------------- stores ----------------
+case st_short_direct
+code B710
+set A 0x81
+expect mem:10 0x81
+expect N 1
+end
+
+case st_long_indexed_x
+code D72000
+set A 7
+set X 2
+expect mem:2002 7
+end
+
+case st_short_indirect
+code 92B710
+set A 0x33
+set mem:10 0x40
+expect mem:40 0x33
+end
+
+case st_x_register_to_indirect
+code 92BF10
+set X 0x55
+set mem:10 0x40
+expect mem:40 0x55
+end
+
+case st_y_register_to_indirect
+code 91BF10
+set Y 0x66
+set mem:10 0x41
+expect mem:41 0x66
+end
+
+case st_y_indexed_y
+code 90EF04
+set Y 3
+expect mem:07 3
+end
+
+case ld_register_transfers
+code 97
+set A 0x80
+expect X 0x80
+expect N 1
+end
+
+case ld_a_from_y
+code 909F
+set Y 0
+set A 0x33
+expect A 0
+expect Z 1
+end
+
+case ld_y_from_x
+code 9093
+set X 0x21
+expect Y 0x21
+end
+
+case ld_x_from_y
+code 93
+set Y 0x7E
+expect X 0x7E
+end
+
+case ld_s_from_a
+code 95
+set SP 0x01FF
+set A 0x40
+expect SP 0x0140
+end
+
+case ld_a_from_s
+code 9E
+set SP 0x01C3
+expect A 0xC3
+expect N 1
+end
+
+# ---------------- read-modify-write ----------------
+case inc_memory_wraps
+code 3C10
+set mem:10 0xFF
+set C 1
+expect mem:10 0
+expect Z 1
+expect N 0
+expect C 1
+end
+
+case dec_memory_wraps
+code 3A10
+set mem:10 0
+expect mem:10 0xFF
+expect N 1
+expect Z 0
+end
+
+case inc_a_overflow_to_negative
+code 4C
+set A 0x7F
+expect A 0x80
+expect N 1
+end
+
+case dec_x
+code 5A
+set X 1
+expect X 0
+expect Z 1
+end
+
+case inc_y
+code 905C
+set Y 0xFE
+expect Y 0xFF
+expect N 1
+end
+
+case inc_indexed_x
+code 6C02
+set X 0x10
+set mem:12 9
+expect mem:12 10
+end
+
+case clr_a
+code 4F
+set A 5
+set N 1
+expect A 0
+expect Z 1
+expect N 0
+end
+
+case clr_memory_indirect_indexed_y
+code 916F10
+set mem:10 0x30
+set Y 2
+set mem:32 0x99
+expect mem:32 0
+expect Z 1
+end
+
+case cpl_a
+code 43
+set A 0x0F
+expect A 0xF0
+expect N 1
+expect Z 0
+expect C 1
+end
+
+case neg_one
+code 40
+set A 1
+expect A 0xFF
+expect C 1
+expect N 1
+end
+
+case neg_zero_clears_carry
+code 40
+set A 0
+set C 1
+expect A 0
+expect C 0
+expect Z 1
+end
+
+case neg_0x80
+code 40
+set A 0x80
+expect A 0x80
+expect N 1
+expect C 1
+end
+
+case sll_a
+code 48
+set A 0x81
+expect A 0x02
+expect C 1
+expect N 0
+end
+
+case srl_a
+code 44
+set A 0x81
+expect A 0x40
+expect C 1
+expect N 0
+expect Z 0
+end
+
+case sra_a_keeps_sign
+code 47
+set A 0x81
+expect A 0xC0
+expect C 1
+expect N 1
+end
+
+case rlc_a_through_carry
+code 49
+set A 0x80
+set C 1
+expect A 0x01
+expect C 1
+expect N 0
+end
+
+case rlc_a_zero_result
+code 49
+set A 0x80
+set C 0
+expect A 0
+expect C 1
+expect Z 1
+end
+
+case rrc_a_through_carry
+code 46
+set A 0x01
+set C 1
+expect A 0x80
+expect C 1
+expect N 1
+end
+
+case rrc_a_zero_result
+code 46
+set A 0x01
+set C 0
+expect A 0
+expect C 1
+expect Z 1
+end
+
+case swap_a
+code 4E
+set A 0xA5
+expect A 0x5A
+expect N 0
+expect Z 0
+end
+
+case tnz_a_negative
+code 4D
+set A 0x80
+expect A 0x80
+expect N 1
+expect Z 0
+end
+
+case tnz_memory_zero
+code 3D10
+set mem:10 0
+expect Z 1
+expect N 0
+end
+
+case mul_x_a
+code 42
+set X 0x10
+set A 0x20
+set H 1
+set C 1
+expect X 0x02
+expect A 0x00
+expect H 0
+expect C 0
+end
+
+case mul_y_a
+code 9042
+set Y 0xFF
+set A 0xFF
+expect Y 0xFE
+expect A 0x01
+end
+
+# ---------------- bit operations ----------------
+case bset_direct
+code 1810
+set mem:10 0x01
+expect mem:10 0x11
+end
+
+case bres_direct
+code 1310
+set mem:10 0xFF
+expect mem:10 0xFD
+end
+
+case bset_pointer
+code 921810
+set mem:10 0x40
+set mem:40 0x00
+expect mem:40 0x10
+end
+
+case bres_pointer_bit0
+code 921110
+set mem:10 0x40
+set mem:40 0xFF
+expect mem:40 0xFE
+end
+
+case btjt_taken_copies_bit_to_carry
+code 0610014C
+until 1004
+set mem:10 0x08
+expect A 0
+expect C 1
+end
+
+case btjt_not_taken
+code 0610014C
+until 1004
+set mem:10 0x00
+set C 1
+expect A 1
+expect C 0
+end
+
+case btjf_taken
+code 0710014C
+until 1004
+set mem:10 0xF7
+expect A 0
+expect C 0
+end
+
+case btjf_not_taken_bit_set
+code 0710014C
+until 1004
+set mem:10 0x08
+expect A 1
+expect C 1
+end
+
+case btjt_pointer_taken
+code 920610014C
+until 1005
+set mem:10 0x40
+set mem:40 0x08
+expect A 0
+expect C 1
+end
+
+case btjf_pointer_not_taken
+code 920710014C
+until 1005
+set mem:10 0x40
+set mem:40 0x08
+expect A 1
+expect C 1
+end
+
+# ---------------- stack, calls, returns ----------------
+case push_pop_a
+code 884F84
+set SP 0x01FF
+set A 0x12
+expect A 0x12
+expect SP 0x01FF
+expect mem:1FF 0x12
+end
+
+case push_xy
+code 8990895F
+set SP 0x01FF
+set X 0x34
+set Y 0x56
+expect mem:1FF 0x34
+expect mem:1FE 0x56
+expect SP 0x01FD
+end
+
+case pop_y
+code 9085
+set SP 0x01FD
+set mem:1FE 0x77
+expect Y 0x77
+expect SP 0x01FE
+end
+
+case push_cc only st70
+code 8A
+set SP 0x01FF
+set H 1
+set N 1
+set C 1
+expect mem:1FF 0xF5
+expect SP 0x01FE
+end
+
+case push_cc_i_flag only st70
+code 8A
+set SP 0x01FF
+set I 1
+set Z 1
+expect mem:1FF 0xEA
+end
+
+case push_cc only st72
+code 8A
+set SP 0x01FF
+set H 1
+set N 1
+set C 1
+set I1 0
+set I0 1
+expect mem:1FF 0xDD
+end
+
+case pop_cc only st70
+code 86
+set SP 0x01FE
+set mem:1FF 0x0B
+expect I 1
+expect Z 1
+expect C 1
+expect N 0
+expect H 0
+expect SP 0x01FF
+end
+
+case pop_cc only st72
+code 86
+set SP 0x01FE
+set mem:1FF 0x3B
+expect I1 1
+expect H 1
+expect I0 1
+expect Z 1
+expect C 1
+expect N 0
+end
+
+case call_long_and_ret
+code CD1006 4C 2003 5C 81
+# 1000: call $1006 ; 1003: inc A ; 1004: jra 1009 ; 1006: inc X ; 1007: ret
+until 1009
+set SP 0x01FF
+expect A 1
+expect X 1
+expect SP 0x01FF
+expect mem:1FF 0x03
+expect mem:1FE 0x10
+end
+
+case callr_and_ret
+code AD02 2003 4C 81
+until 1007
+set SP 0x01FF
+expect A 1
+expect SP 0x01FF
+expect mem:1FF 0x02
+expect mem:1FE 0x10
+end
+
+case call_x_indirect_register
+# X is 8 bits, so call (X) reaches 0x0000-0x00FF only
+code FD
+until 0080
+set SP 0x01FF
+set X 0x80
+expect SP 0x01FD
+expect mem:1FF 0x01
+expect mem:1FE 0x10
+expect PC 0x0080
+end
+
+case jp_x
+code FC
+until 0080
+set X 0x80
+expect PC 0x0080
+end
+
+case jp_short_indexed_x
+code EC10
+until 0030
+set X 0x20
+expect PC 0x0030
+end
+
+case jp_short_direct
+code BC40
+until 0040
+expect PC 0x0040
+end
+
+case call_short_direct
+code BD40
+until 0040
+set SP 0x01FF
+expect PC 0x0040
+expect SP 0x01FD
+expect mem:1FF 0x02
+expect mem:1FE 0x10
+end
+
+case jp_long_indexed_x
+code DC1002 4C
+until 1004
+set X 2
+expect A 0
+end
+
+case jp_pointer_word
+code 92CC10 4C 4C
+until 1005
+set mem:10 0x10
+set mem:11 0x05
+expect A 0
+end
+
+case jp_pointer_byte
+# jp [$10]: the one-byte pointer holds the low target address; the target is 0x0004
+code 92BC10
+until 0004
+set mem:10 0x04
+expect PC 0x0004
+end
+
+case jp_indirect_indexed_y
+code 91EC10
+until 0036
+set mem:10 0x30
+set Y 6
+expect PC 0x0036
+end
+
+case jra_indirect_relative_forward
+# 92 20 10: jra [$10]; the byte at $10 is the signed offset (+3) from the next instruction
+code 922010 9D9D9D
+until 1006
+set mem:10 3
+expect PC 0x1006
+end
+
+case jra_indirect_relative_backward
+code 9D 922010
+# offset -5 from 0x1004 = 0x0FFF
+until 0FFF
+set mem:10 0xFB
+expect PC 0x0FFF
+end
+
+case callr_indirect_relative
+# 1000: callr [$10] (offset +3 from 1003 = 1006) ; 1003: jra 1008 ; 1005: nop ; 1006: inc A ; 1007: ret
+code 92AD10 2003 9D 4C 81
+until 1008
+set SP 0x01FF
+set mem:10 0x03
+expect A 1
+expect SP 0x01FF
+expect mem:1FF 0x03
+expect mem:1FE 0x10
+end
+
+# ---------------- interrupts, TRAP, IRET ----------------
+case trap_pushes_context_and_vectors only st70
+code 83
+until 3000
+set SP 0x01FF
+set A 0x11
+set X 0x22
+set mem:FFFC 0x30
+set mem:FFFD 0x00
+expect mem:1FF 0x01
+expect mem:1FE 0x10
+expect mem:1FD 0x22
+expect mem:1FC 0x11
+expect mem:1FB 0xE0
+expect SP 0x01FA
+expect I 1
+expect PC 0x3000
+end
+
+case trap_pushes_context_and_vectors only st72
+code 83
+until 3000
+set SP 0x01FF
+set A 0x11
+set X 0x22
+set I1 1
+set I0 0
+set mem:FFFC 0x30
+set mem:FFFD 0x00
+expect mem:1FF 0x01
+expect mem:1FE 0x10
+expect mem:1FD 0x22
+expect mem:1FC 0x11
+expect mem:1FB 0xE0
+expect SP 0x01FA
+expect I0 1
+expect I1 1
+expect PC 0x3000
+end
+
+case iret_restores_context only st70
+code 80
+until 2040
+set SP 0x01FA
+set mem:1FB 0x0B
+set mem:1FC 0x11
+set mem:1FD 0x22
+set mem:1FE 0x20
+set mem:1FF 0x40
+expect A 0x11
+expect X 0x22
+expect I 1
+expect Z 1
+expect C 1
+expect N 0
+expect H 0
+expect SP 0x01FF
+expect PC 0x2040
+end
+
+case iret_restores_context only st72
+code 80
+until 2040
+set SP 0x01FA
+set mem:1FB 0x1C
+set mem:1FC 0x11
+set mem:1FD 0x22
+set mem:1FE 0x20
+set mem:1FF 0x40
+expect A 0x11
+expect X 0x22
+expect H 1
+expect I0 1
+expect N 1
+expect I1 0
+expect Z 0
+expect C 0
+expect SP 0x01FF
+expect PC 0x2040
+end
+
+case rsp_sets_stack_low_byte
+code 9C
+set SP 0x0123
+expect SP 0x01FF
+end
+
+case sim_rim_scf_rcf only st70
+code 9B 99
+set I 0
+expect I 1
+expect C 1
+end
+
+case rim_clears_mask only st70
+code 9A
+set I 1
+expect I 0
+end
+
+case sim_rim only st72
+code 9B
+set I0 0
+set I1 0
+expect I0 1
+expect I1 1
+end
+
+case rim_level0 only st72
+code 9A
+set I0 1
+set I1 1
+expect I0 0
+expect I1 1
+end
+
+case rcf_scf
+code 98 99 98
+set C 1
+expect C 0
+end
+
+case nop_changes_nothing
+code 9D
+set A 5
+set C 1
+expect A 5
+expect C 1
+expect PC 0x1001
+end
+
+# ---------------- a deliberately wrong expectation: this case must be reported as failing ----------------
+case broken_expectation_adc broken
+code A901
+set A 1
+expect A 3
+end
+
+# ---- conditional branches (generated by gen_branch_cases.py) ----
+case br_jra_taken_1
+code 20014C
+until 1003
+expect A 0
+end
+
+case br_jrf_not_taken_2
+code 21014C
+until 1003
+expect A 1
+end
+
+case br_jrugt_taken_3
+code 22014C
+until 1003
+set C 0
+set Z 0
+expect A 0
+end
+
+case br_jrugt_not_taken_4
+code 22014C
+until 1003
+set C 1
+set Z 0
+expect A 1
+end
+
+case br_jrugt_not_taken_5
+code 22014C
+until 1003
+set C 0
+set Z 1
+expect A 1
+end
+
+case br_jrule_taken_6
+code 23014C
+until 1003
+set C 1
+set Z 0
+expect A 0
+end
+
+case br_jrule_not_taken_7
+code 23014C
+until 1003
+set C 0
+set Z 0
+expect A 1
+end
+
+case br_jrule_taken_8
+code 23014C
+until 1003
+set C 0
+set Z 1
+expect A 0
+end
+
+case br_jrnc_taken_9
+code 24014C
+until 1003
+set C 0
+expect A 0
+end
+
+case br_jrnc_not_taken_10
+code 24014C
+until 1003
+set C 1
+expect A 1
+end
+
+case br_jrc_taken_11
+code 25014C
+until 1003
+set C 1
+expect A 0
+end
+
+case br_jrc_not_taken_12
+code 25014C
+until 1003
+set C 0
+expect A 1
+end
+
+case br_jrne_taken_13
+code 26014C
+until 1003
+set Z 0
+expect A 0
+end
+
+case br_jrne_not_taken_14
+code 26014C
+until 1003
+set Z 1
+expect A 1
+end
+
+case br_jreq_taken_15
+code 27014C
+until 1003
+set Z 1
+expect A 0
+end
+
+case br_jreq_not_taken_16
+code 27014C
+until 1003
+set Z 0
+expect A 1
+end
+
+case br_jrnh_taken_17
+code 28014C
+until 1003
+set H 0
+expect A 0
+end
+
+case br_jrnh_not_taken_18
+code 28014C
+until 1003
+set H 1
+expect A 1
+end
+
+case br_jrh_taken_19
+code 29014C
+until 1003
+set H 1
+expect A 0
+end
+
+case br_jrh_not_taken_20
+code 29014C
+until 1003
+set H 0
+expect A 1
+end
+
+case br_jrpl_taken_21
+code 2A014C
+until 1003
+set N 0
+expect A 0
+end
+
+case br_jrpl_not_taken_22
+code 2A014C
+until 1003
+set N 1
+expect A 1
+end
+
+case br_jrmi_taken_23
+code 2B014C
+until 1003
+set N 1
+expect A 0
+end
+
+case br_jrmi_not_taken_24
+code 2B014C
+until 1003
+set N 0
+expect A 1
+end
+
+case br_jrih_taken_25
+code 2F014C
+until 1003
+set EXTI 1
+expect A 0
+end
+
+case br_jrih_not_taken_26
+code 2F014C
+until 1003
+set EXTI 0
+expect A 1
+end
+
+case br_jril_taken_27
+code 2E014C
+until 1003
+set EXTI 0
+expect A 0
+end
+
+case br_jril_not_taken_28
+code 2E014C
+until 1003
+set EXTI 1
+expect A 1
+end
+
+case br_jrnm_taken_1 only st70
+code 2C014C
+until 1003
+set I 0
+expect A 0
+end
+
+case br_jrnm_not_taken_2 only st70
+code 2C014C
+until 1003
+set I 1
+expect A 1
+end
+
+case br_jrm_taken_3 only st70
+code 2D014C
+until 1003
+set I 1
+expect A 0
+end
+
+case br_jrm_not_taken_4 only st70
+code 2D014C
+until 1003
+set I 0
+expect A 1
+end
+
+case br_jrnm_taken_1 only st72
+code 2C014C
+until 1003
+set I0 0
+set I1 0
+expect A 0
+end
+
+case br_jrnm_not_taken_2 only st72
+code 2C014C
+until 1003
+set I0 1
+set I1 0
+expect A 1
+end
+
+case br_jrnm_not_taken_3 only st72
+code 2C014C
+until 1003
+set I0 0
+set I1 1
+expect A 1
+end
+
+case br_jrm_taken_4 only st72
+code 2D014C
+until 1003
+set I0 1
+set I1 1
+expect A 0
+end
+
+case br_jrm_not_taken_5 only st72
+code 2D014C
+until 1003
+set I0 0
+set I1 1
+expect A 1
+end
+
+case br_jrm_not_taken_6 only st72
+code 2D014C
+until 1003
+set I0 1
+set I1 0
+expect A 1
+end
+
